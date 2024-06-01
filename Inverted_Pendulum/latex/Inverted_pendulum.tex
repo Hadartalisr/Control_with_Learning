@@ -41,6 +41,7 @@ pdfproducer={PDFLaTeX},%
     \item Read all the Questions carefully before you start working on the assignment.
     \item This file contains \underbar{extra materials} for those who are interested in learning the tools used in the 
         assignment's solution. \underbar{Reading it is not required to complete the assignment.}
+    \item You can use any python library to solve the problems.
 \end{itemize}
 
 % * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -166,53 +167,15 @@ where \( x \) is the cart position, \( v \) is the velocity, \( \theta \) is the
 
 
 \problem{1 - Modeling the Inverted Pendulum System}
-\textcolor{purple}{
-\subproblem{a} Write the state-space representation of the inverted pendulum system in the form:
-\begin{equation*}
-    \dot{\mathbf{y_t}} = A_t \mathbf{y_t} + B_t u_t
-\end{equation*}
-where \( \mathbf{y_t} = [x_t, \dot{x_t}, \theta_t, \dot{\theta_t}]^T \) is the state vector, and \( A \) and \( B \) are the state and input matrices, respectively.
-}
-
-\medbreak
-
-
-\textcolor{teal}{
-\begin{equation*}
-    \dot{\mathbf{y_t}} = \begin{bmatrix}
-        \dot{x_t} \\
-        \ddot{x_t} \\
-        \dot{\theta_t} \\
-        \ddot{\theta_t}
-    \end{bmatrix} = \begin{bmatrix}
-        0 & 1 & 0 & 0 \\
-        0 & -\frac{\delta}{M + m (1 - \cos^2(\theta_t))} & \frac{m g L \sin(\theta_t)}{M + m (1 - \cos^2(\theta_t))} & 0 \\
-        0 & 0 & 0 & 1 \\
-        0 & -\frac{m L \delta \cos(\theta_t)}{M L + m L (1 - \cos^2(\theta_t))} & \frac{(M + m) g \sin(\theta_t)}{M L + m L (1 - \cos^2(\theta_t))} & 0
-    \end{bmatrix} \begin{bmatrix}
-        x_t \\
-        \dot{x_t} \\
-        \theta_t \\
-        \dot{\theta_t}
-    \end{bmatrix} + \begin{bmatrix}
-        0 \\
-        \frac{1}{M + m (1 - \cos^2(\theta_t))} \\
-        0 \\
-        \frac{\cos(\theta)}{M L + m L (1 - \cos^2(\theta_t))}
-    \end{bmatrix} u
-\end{equation*}
-}
-
-\bigbreak
 
 \textcolor{purple}{
-\subproblem{b} Implement the function \texttt{dynamics} in the provided Python file \texttt{inverted\_pendulum.py}.
+\subproblem{a} Implement the function \texttt{dynamics} in the provided Python file \texttt{inverted\_pendulum.py}.
 }
 
 \begin{minted}[fontsize=\footnotesize]{python}
     def dynamics(y, m, M, L, g, delta, u):
         """
-        Compute the state derivatives.
+        Compute the state derivative.
         :param y: state vector
         :param m: pendulum mass
         :param M: cart mass
@@ -247,7 +210,7 @@ where \( \mathbf{y_t} = [x_t, \dot{x_t}, \theta_t, \dot{\theta_t}]^T \) is the s
         theta_dot = y[3]
         sin_theta = np.sin(theta)
         cos_theta = np.cos(theta)
-        D = m * (L ** 2) * (m + M * (1 - cos_theta ** 2))    
+        D = m * (L ** 2) * (M + m * (1 - cos_theta ** 2))    
         dy = np.array([
             y[1],
             (1 / D) * (
@@ -267,42 +230,16 @@ where \( \mathbf{y_t} = [x_t, \dot{x_t}, \theta_t, \dot{\theta_t}]^T \) is the s
 
 \medbreak
 
-\textcolor{teal}{
-\begin{equation*}
-    \dot{\mathbf{y_t}} = \begin{bmatrix}
-        \dot{x_t} \\
-        \ddot{x_t} \\
-        \dot{\theta_t} \\
-        \ddot{\theta_t}
-    \end{bmatrix} = \begin{bmatrix}
-        0 & 1 & 0 & 0 \\
-        0 & -\frac{\delta}{M + m (1 - \cos^2(\theta_t))} & \frac{m g L \sin(\theta_t)}{M + m (1 - \cos^2(\theta_t))} & 0 \\
-        0 & 0 & 0 & 1 \\
-        0 & -\frac{m L \delta \cos(\theta_t)}{M L + m L (1 - \cos^2(\theta_t))} & \frac{(M + m) g \sin(\theta_t)}{M L + m L (1 - \cos^2(\theta_t))} & 0
-    \end{bmatrix} \begin{bmatrix}
-        x_t \\
-        \dot{x_t} \\
-        \theta_t \\
-        \dot{\theta_t}
-    \end{bmatrix} + \begin{bmatrix}
-        0 \\
-        \frac{1}{M + m (1 - \cos^2(\theta_t))} \\
-        0 \\
-        \frac{\cos(\theta)}{M L + m L (1 - \cos^2(\theta_t))}
-    \end{bmatrix} u
-\end{equation*}
-}
-
-\medbreak
-
 \textcolor{purple}{
-    \subproblem{b} Are there exist matrices $A$ and $B$ such that $\forall t \in \mathbb{R}_{\geq 0}$,  $\dot{\mathbf{y_t}} = A_t \mathbf{y_t} + B_t u_t = A \mathbf{y_t} + B u_t $? Justify your answer.
+    \subproblem{b} Are there exist matrices $A$ and $B$ such that $\forall t \in \mathbb{R}_{\geq 0}$,  $\dot{\mathbf{y_t}} = A \mathbf{y_t} + B u_t $? Justify your answer.
 }
 
 \medbreak
 
 \textcolor{teal}{
-    No, the matrices $A$ and $B$ cannot be constant for all time $t$ since the system dynamics are nonlinear and depend on the state variables $x$ and $\theta$.
+    The system dynamics are nonlinear, as shown in equations \ref{eq:cart_position} - \ref{eq:pendulum_angular_velocity}. 
+    Therefore, there are no matrices \( A \) and \( B \) that can linearize the system dynamics at all time points. 
+    Linearization is only possible around specific operating points, such as the upright position of the pendulum. 
 }
 
 \medbreak
@@ -312,8 +249,111 @@ where \( \mathbf{y_t} = [x_t, \dot{x_t}, \theta_t, \dot{\theta_t}]^T \) is the s
     \begin{equation*}
         \dot{\mathbf{x}} = A \mathbf{x} + B u
     \end{equation*}
-    where \( A \) and \( B \) are the state and input matrices, respectively.
+    where \( A \) and \( B \) are the state and input matrices, respectively. 
 }
+
+\medbreak
+
+\textcolor{teal}{
+    The linearized system dynamics around the upright position (\(\theta = \pi\)) are given by:
+    \begin{equation*}
+        \dot{\mathbf{y}} = \begin{bmatrix}
+            0 & 1 & 0 & 0 \\
+            0 & -\frac{\delta}{M} & \frac{m g}{M} & 0 \\
+            0 & 0 & 0 & 1 \\
+            0 & -\frac{\delta}{M L} & - \frac{(M + m) g}{M L} & 0
+        \end{bmatrix} \mathbf{y} + 
+        \begin{bmatrix}
+            0 \\
+            \frac{1}{M} \\
+            0 \\
+            \frac{1}{M L}
+        \end{bmatrix} u
+    \end{equation*}
+}
+
+\bigbreak
+
+\textcolor{purple}{
+    \subproblem{d} Implement the following functions.
+}
+
+\begin{minted}[fontsize=\footnotesize]{python}
+    def get_a_matrix(m, M, L, g, delta):
+        """
+        :return A: state matrix
+        """
+
+    def get_b_matrix(m, M, L, g, delta):
+        """
+        :return B: input matrix
+        """
+\end{minted}
+
+\medbreak
+
+\textcolor{teal}{
+    Solution:
+}
+
+\begin{minted}[fontsize=\footnotesize]{python}
+    def get_a_matrix(m, M, L, g, delta):
+        """
+        :return A: state matrix
+        """
+        A = np.array([
+            [0, 1, 0, 0],
+            [0, -delta / M, m * g / M, 0],
+            [0, 0, 0, 1],
+            [0, -delta / (M * L), - (M + m) * g / (M * L), 0]
+        ])
+        return A
+
+    def get_b_matrix(m, M, L, g, delta):
+        """
+        :return B: input matrix
+        """
+        B = np.array([
+            [0],
+            [1 / M],
+            [0],
+            [1 / (M * L)]
+        ])
+        return B
+\end{minted}
+
+
+\problem{2 - LQR Control for the Inverted Pendulum System}
+
+We will set the following parameters for the inverted pendulum system:
+\begin{itemize}
+    \item Pendulum mass: \( m = 0.1 \) kg
+    \item Cart mass: \( M = 1.0 \) kg
+    \item Pendulum length: \( L = 0.5 \) m
+    \item Gravitational acceleration: \( g = 9.81 \) m/s\(^2\)
+    \item Friction damping: \( \delta = 0.1 \) Ns/m
+\end{itemize}
+
+\textcolor{purple}{
+    \subproblem{a} Calculate and print the State feedback gain matrix \( K \) for the LQR controller (bonus points for using the continuous-time Riccati equation).
+}
+
+\medbreak
+
+\textcolor{teal}{
+    Solution:
+}
+
+\begin{minted}[fontsize=\footnotesize]{python}
+    K, S, E = control.lqr(A, B, Q, R)
+\end{minted}
+
+\bigbreak
+
+
+
+    
+
 
 \bigbreak
 \bigbreak
