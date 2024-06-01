@@ -11,7 +11,9 @@
 \usepackage[colorinlistoftodos]{todonotes}
 \usepackage{rotating}
 \usepackage{tikz}
-\usetikzlibrary{decorations.pathreplacing} % Add this line to load the necessary TikZ library for decorations
+\usetikzlibrary{decorations.pathreplacing} 
+\usepackage{float}
+\usepackage{minted}
 
 
 %\usetikzlibrary{through,backgrounds}
@@ -27,6 +29,7 @@ pdfproducer={PDFLaTeX},%
 \usepackage{booktabs}
 \input{macros.tex}
 
+\setlength{\parindent}{0pt}
 
 
 \begin{document}
@@ -71,21 +74,15 @@ accurate representation of physical phenomena, allowing for precise modeling and
 The state-space representation of a continuous-time linear system is given by the following set of differential equations:
 
 \begin{equation}
-    \dot{x}(t) = A x(t) + B u(t),
-\end{equation}
-\begin{equation}
-    y(t) = C x(t) + D u(t),
+    \dot{x}(t) = A x(t) + B u(t)
 \end{equation}
 
 where:
 \begin{itemize}
     \item $x(t) \in \mathbb{R}^n$ is the state vector.
     \item $u(t) \in \mathbb{R}^m$ is the control input.
-    \item $y(t) \in \mathbb{R}^p$ is the output vector.
     \item $A \in \mathbb{R}^{n \times n}$ is the state matrix.
     \item $B \in \mathbb{R}^{n \times m}$ is the input matrix.
-    \item $C \in \mathbb{R}^{p \times n}$ is the output matrix.
-    \item $D \in \mathbb{R}^{p \times m}$ is the feedthrough (or direct transmission) matrix.
 \end{itemize}
 
 \subsection{Linear Quadratic Regulator (LQR) Problem}
@@ -119,7 +116,7 @@ where $K_d$ is the optimal control gain matrix.
 \subsection{The Optimal Control}
 In the lecture, we discussed the determination of the control gain matrix \( K \) for discrete-time systems using an iterative approach. 
 This method involved solving a finite-horizon cost function through backward iteration, essentially using dynamic programming techniques. 
-However, for continuous-time systems, the process leverages the \important{Riccati equation} for an infinite-horizon cost function, 
+However, for continuous-time systems, the process leverages the \important{Continuous Algebraic Riccati equation} for an infinite-horizon cost function, 
 providing a more direct and analytical solution (\ref{sec:riccati}).
 
 
@@ -144,9 +141,197 @@ providing a more direct and analytical solution (\ref{sec:riccati}).
 % * * * * * * * * * * * * * * * * * * * * * * * * 
 \section{Inverted Pendulum on a Cart}
 
+
+The inverted pendulum on a cart is a classic problem in control theory and dynamics, often used to illustrate and test various control strategies. 
+The system consists of a pendulum attached to a cart that can move horizontally. 
+The goal is to design a controller that can stabilize the pendulum at the top position while regulating the position of the cart.
+
 \subsection{Formulation of the Problem}
 
-\subsection{Systen Dynamics}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{./figs/inverted_pendulum_on_a_cart.png}
+    \caption{Schematic of inverted pendulum on a cart.}
+\end{figure}
+
+
+The dynamics of the system can be described by the following set of nonlinear differential equations:
+\begin{align}
+    \dot{x} &= v \label{eq:cart_position} \\
+    \ddot{x} &= \frac{-m^2 L^2 g \cos(\theta) \sin(\theta) + m L^2 \left( m L \omega^2 \sin(\theta) - \delta v \right) + m L^2 u}{m L^2 \left( M + m (1 - \cos(\theta)^2) \right)} \label{eq:cart_velocity} \\
+    \dot{\theta} &= \omega \label{eq:pendulum_angle} \\
+    \ddot{\theta} &= \frac{(m + M) m g L \sin(\theta) - m L \cos(\theta) \left( m L \omega^2 \sin(\theta) - \delta v \right) + m L \cos(\theta) u}{m L^2 \left( M + m (1 - \cos(\theta)^2) \right)} \label{eq:pendulum_angular_velocity}
+\end{align}
+where \( x \) is the cart position, \( v \) is the velocity, \( \theta \) is the pendulum angle, \( \omega \) is the angular velocity, \( m \) is the pendulum mass, \( M \) is the cart mass, \( L \) is the pendulum arm length, \( g \) is the gravitational acceleration, \( \delta \) is a friction damping on the cart, and \( u \) is a control force applied to the cart.
+
+
+\problem{1 - Modeling the Inverted Pendulum System}
+\textcolor{purple}{
+\subproblem{a} Write the state-space representation of the inverted pendulum system in the form:
+\begin{equation*}
+    \dot{\mathbf{y_t}} = A_t \mathbf{y_t} + B_t u_t
+\end{equation*}
+where \( \mathbf{y_t} = [x_t, \dot{x_t}, \theta_t, \dot{\theta_t}]^T \) is the state vector, and \( A \) and \( B \) are the state and input matrices, respectively.
+}
+
+\medbreak
+
+
+\textcolor{teal}{
+\begin{equation*}
+    \dot{\mathbf{y_t}} = \begin{bmatrix}
+        \dot{x_t} \\
+        \ddot{x_t} \\
+        \dot{\theta_t} \\
+        \ddot{\theta_t}
+    \end{bmatrix} = \begin{bmatrix}
+        0 & 1 & 0 & 0 \\
+        0 & -\frac{\delta}{M + m (1 - \cos^2(\theta_t))} & \frac{m g L \sin(\theta_t)}{M + m (1 - \cos^2(\theta_t))} & 0 \\
+        0 & 0 & 0 & 1 \\
+        0 & -\frac{m L \delta \cos(\theta_t)}{M L + m L (1 - \cos^2(\theta_t))} & \frac{(M + m) g \sin(\theta_t)}{M L + m L (1 - \cos^2(\theta_t))} & 0
+    \end{bmatrix} \begin{bmatrix}
+        x_t \\
+        \dot{x_t} \\
+        \theta_t \\
+        \dot{\theta_t}
+    \end{bmatrix} + \begin{bmatrix}
+        0 \\
+        \frac{1}{M + m (1 - \cos^2(\theta_t))} \\
+        0 \\
+        \frac{\cos(\theta)}{M L + m L (1 - \cos^2(\theta_t))}
+    \end{bmatrix} u
+\end{equation*}
+}
+
+\bigbreak
+
+\textcolor{purple}{
+\subproblem{b} Implement the function \texttt{dynamics} in the provided Python file \texttt{inverted\_pendulum.py}.
+}
+
+\begin{minted}[fontsize=\footnotesize]{python}
+    def dynamics(y, m, M, L, g, delta, u):
+        """
+        Compute the state derivatives.
+        :param y: state vector
+        :param m: pendulum mass
+        :param M: cart mass
+        :param L: pendulum length
+        :param g: gravitational acceleration
+        :param delta: friction damping
+        :param u: control input
+        :return dy: state derivative
+        """
+\end{minted}
+
+\medbreak
+
+\textcolor{teal}{
+    Solution:
+}
+
+\begin{minted}[fontsize=\footnotesize]{python}
+    def dynamics(y, m, M, L, g, delta, u):
+        """
+        Compute the state derivatives.
+        :param y: state vector
+        :param m: pendulum mass
+        :param M: cart mass
+        :param L: pendulum length
+        :param g: gravitational acceleration
+        :param delta: friction damping
+        :param u: control input
+        :return: dy: state derivative
+        """
+        theta = y[2]
+        theta_dot = y[3]
+        sin_theta = np.sin(theta)
+        cos_theta = np.cos(theta)
+        D = m * (L ** 2) * (m + M * (1 - cos_theta ** 2))    
+        dy = np.array([
+            y[1],
+            (1 / D) * (
+                -(m ** 2) * (L ** 2) * g * cos_theta * sin_theta 
+                + m * (L ** 2) * (m * L * (theta_dot ** 2) * sin_theta - delta * y[1])
+            ) + m * (L ** 2) * (1 / D) * u,
+            y[3],
+            (1 / D) * (
+                (m + M) * m * g * L * sin_theta 
+                - m * L * cos_theta * (m * L * (theta_dot ** 2) * sin_theta 
+                - delta * y[1])
+            ) - m * L * cos_theta * (1 / D) * u
+        ])
+        return dy
+\end{minted}
+
+
+\medbreak
+
+\textcolor{teal}{
+\begin{equation*}
+    \dot{\mathbf{y_t}} = \begin{bmatrix}
+        \dot{x_t} \\
+        \ddot{x_t} \\
+        \dot{\theta_t} \\
+        \ddot{\theta_t}
+    \end{bmatrix} = \begin{bmatrix}
+        0 & 1 & 0 & 0 \\
+        0 & -\frac{\delta}{M + m (1 - \cos^2(\theta_t))} & \frac{m g L \sin(\theta_t)}{M + m (1 - \cos^2(\theta_t))} & 0 \\
+        0 & 0 & 0 & 1 \\
+        0 & -\frac{m L \delta \cos(\theta_t)}{M L + m L (1 - \cos^2(\theta_t))} & \frac{(M + m) g \sin(\theta_t)}{M L + m L (1 - \cos^2(\theta_t))} & 0
+    \end{bmatrix} \begin{bmatrix}
+        x_t \\
+        \dot{x_t} \\
+        \theta_t \\
+        \dot{\theta_t}
+    \end{bmatrix} + \begin{bmatrix}
+        0 \\
+        \frac{1}{M + m (1 - \cos^2(\theta_t))} \\
+        0 \\
+        \frac{\cos(\theta)}{M L + m L (1 - \cos^2(\theta_t))}
+    \end{bmatrix} u
+\end{equation*}
+}
+
+\medbreak
+
+\textcolor{purple}{
+    \subproblem{b} Are there exist matrices $A$ and $B$ such that $\forall t \in \mathbb{R}_{\geq 0}$,  $\dot{\mathbf{y_t}} = A_t \mathbf{y_t} + B_t u_t = A \mathbf{y_t} + B u_t $? Justify your answer.
+}
+
+\medbreak
+
+\textcolor{teal}{
+    No, the matrices $A$ and $B$ cannot be constant for all time $t$ since the system dynamics are nonlinear and depend on the state variables $x$ and $\theta$.
+}
+
+\medbreak
+
+\textcolor{purple}{
+    \subproblem{c} Linearize the system dynamics around the upright position (\(\theta = \pi\)) to obtain the linearized state-space representation:
+    \begin{equation*}
+        \dot{\mathbf{x}} = A \mathbf{x} + B u
+    \end{equation*}
+    where \( A \) and \( B \) are the state and input matrices, respectively.
+}
+
+\bigbreak
+\bigbreak
+\bigbreak
+\bigbreak
+\bigbreak
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -277,6 +462,24 @@ with \( \frac{\partial f}{\partial x} \) replacing \( A \) and \( \frac{\partial
 This procedure is extremely general, and may be used to numerically obtain nonlinear optimal control trajectories.
 
 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+% * * * * * * * * * * * * * * * * * * * * * * * * 
+\newpage
+\section{Euler-Lagrange Equations}
 
 
 % * * * * * * * * * * * * * * * * * * * * * * * * 

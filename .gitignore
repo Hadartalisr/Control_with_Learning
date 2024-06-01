@@ -283,3 +283,6 @@ fabric.properties
 .bak 
 .mtc
 build/
+
+*.pygtex
+*.pygstyle
