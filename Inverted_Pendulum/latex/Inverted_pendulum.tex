@@ -41,7 +41,7 @@ pdfproducer={PDFLaTeX},%
     \item Read all the Questions carefully before you start working on the assignment.
     \item This file contains \underbar{extra materials} for those who are interested in learning the tools used in the 
         assignment's solution. \underbar{Reading it is not required to complete the assignment.}
-    \item You can use any python library to solve the problems.
+    \item You can use any python library to solve the problems (e.g., \textit{numpy, scipy, control, matplotlib,} etc.).
 \end{itemize}
 
 % * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -245,7 +245,7 @@ where \( x \) is the cart position, \( v \) is the velocity, \( \theta \) is the
 \medbreak
 
 \textcolor{purple}{
-    \subproblem{c} Linearize the system dynamics around the upright position (\(\theta = \pi\)) to obtain the linearized state-space representation:
+    \subproblem{c} Linearize the system dynamics around the upright position \( \textbf{y}_{goal} = [0, 0, \pi, 0] \) to obtain the linearized state-space representation:
     \begin{equation*}
         \dot{\mathbf{x}} = A \mathbf{x} + B u
     \end{equation*}
@@ -329,13 +329,23 @@ We will set the following parameters for the inverted pendulum system:
 \begin{itemize}
     \item Pendulum mass: \( m = 0.1 \) kg
     \item Cart mass: \( M = 1.0 \) kg
-    \item Pendulum length: \( L = 0.5 \) m
+    \item Pendulum length: \( L = 1 \) m
     \item Gravitational acceleration: \( g = 9.81 \) m/s\(^2\)
     \item Friction damping: \( \delta = 0.1 \) Ns/m
 \end{itemize}
 
 \textcolor{purple}{
-    \subproblem{a} Calculate and print the State feedback gain matrix \( K \) for the LQR controller (bonus points for using the continuous-time Riccati equation).
+    \subproblem{a} Calculate and print the State feedback gain matrix \( K \) for the LQR controller. 
+    Use the following cost matrices:
+    \begin{equation*}
+        Q = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0 \\
+            0 & 0 & 1 & 0 \\
+            0 & 0 & 0 & 1
+        \end{bmatrix}, \quad R = 1
+    \end{equation*}
+    Bonus points will be given for using the continuous-time Riccati equation.
 }
 
 \medbreak
@@ -345,10 +355,199 @@ We will set the following parameters for the inverted pendulum system:
 }
 
 \begin{minted}[fontsize=\footnotesize]{python}
+    Q = np.diag([1,1,1,1])
+    R = np.array([[1]])
     K, S, E = control.lqr(A, B, Q, R)
+    print("State feedback gain matrix K:")
+    print(K)
+    print("Eigenvalues of the closed-loop system:")
+    print(E)
 \end{minted}
 
 \bigbreak
+
+\textcolor{purple}{
+    \subproblem{b} Implement the following function.
+}
+    \begin{minted}[fontsize=\footnotesize]{python}
+        def dynamics_with_control(y, m, M, L, g, delta, K):
+            """
+            Compute the state derivative with control input.
+            :param K: state feedback gain matrix
+            :return dy: state derivative
+            """
+    \end{minted}
+
+
+\medbreak
+
+\textcolor{teal}{
+    Solution:
+}
+
+\begin{minted}[fontsize=\footnotesize]{python}
+    def dynamics_with_control(y, t, y_goal, m, M, L, g, delta, K):
+        """
+        Compute the state derivative with control input.
+        :param K: state feedback gain matrix
+        :return dy: state derivative
+        """
+        u = np.dot(-K, y - y_goal )[0]
+        return dynamics(y, m, M, L, g, delta, u)
+\end{minted}
+
+
+\bigbreak
+
+\textcolor{purple}{
+\subproblem{c} Simulate the system with the LQR controller for the initial state \( \mathbf{y_0} = [2, 0, (1 + 0.1) \pi, 0] \) 
+and a control input \( u_t = -K \cdot \left( \mathbf{y_t - y}_{goal} \right) \). 
+Plot the control input, cart position, and pendulum angle over time.
+Use the following simulation parameters:
+\begin{itemize}
+    \item Simulation time: \( t_f = 10 \) s
+    \item $dt$ : \( \frac{1}{30} \)
+\end{itemize}
+}
+
+\medbreak
+
+\textcolor{teal}{
+    Solution:
+}
+
+\begin{minted}[fontsize=\footnotesize]{python}
+    def degrees_to_radians(y):
+        return (y % (2 * np.pi)) / np.pi 
+
+
+    def compute_control_input(y, y_goal, K):
+        """
+        Compute the control input vector u based on the state vector y.
+        :param y: state vector
+        :param y_goal: goal state vector
+        :param K: state feedback gain matrix
+        :return: control input vector u
+        """
+        return np.array([np.dot(-K, y_i - y_goal) for y_i in y])
+
+
+    def plot_results(t, u, y):
+        fig, axs = plt.subplots(3, 1, figsize=(10, 10))
+        
+        axs[0].plot(t, u, label='Control Input')
+        axs[0].set_ylabel('Force (N)')
+        axs[0].set_xlabel('Time (s)')
+        axs[0].legend()
+        axs[0].axhline(y=0, color='r', linestyle='--')
+
+        axs[1].plot(t, y[:, 0], label='Cart Position')
+        axs[1].set_ylabel('Position (m)')
+        axs[1].set_xlabel('Time (s)')
+        axs[1].legend()
+        axs[1].axhline(y=0, color='r', linestyle='--')
+
+        axs[2].plot(t, degrees_to_radians(y[:, 2]), label='Pendulum Angle')
+        axs[2].set_ylabel('Angle (rad)')
+        axs[2].set_xlabel('Time (s)')
+        axs[2].legend()
+        axs[2].axhline(y=1, color='r', linestyle='--')
+        axs[2].invert_yaxis()
+        plt.tight_layout()
+        plt.show()
+\end{minted}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{./figs/figs.png}
+    \caption{Simulation results for the inverted pendulum system with LQR control.}
+\end{figure}
+
+\bigbreak
+
+\newpage
+\textcolor{purple}{
+\subproblem{d} Simulate the inverted pendulum system with the LQR controller for various initial states 
+\(\mathbf{y_0} = [x_0, 0, \pi, 0]\), where \(x_0\) ranges from 1 to 9. Plot the control input, 
+cart position, and pendulum angle over time. Use a gradient color scheme to represent the initial position \(x_0\), 
+with larger \(x_0\) values represented by darker blue colors. Explain what happens to the control input and the system states over time.
+Use the following simulation parameters:
+\begin{itemize}
+    \item Simulation time: \( t_f = 15 \) s
+    \item $dt$ : \( \frac{1}{30} \)
+\end{itemize}
+}
+
+\medbreak
+
+\textcolor{teal}{
+    Solution:
+}
+
+\begin{minted}[fontsize=\footnotesize]{python}
+    tf = 15
+    dt = float(1 / 30)
+    t = np.arange(0, tf, dt)
+
+    A = get_a_matrix(m, M, L, g, delta)
+    B = get_b_matrix(m, M, L, g, delta)
+    Q = np.diag([1,1,1,1])
+    R = np.array([[1]])
+    y_goal = np.array([0, 0, np.pi * 1, 0])
+
+    K, S, E = control.lqr(A, B, Q, R)
+
+    fig, axs = plt.subplots(3, 1, figsize=(15, 25))
+    axs[0].set_ylabel('Force (N)')
+    axs[0].set_xlabel('Time (s)')
+    axs[0].axhline(y=0, color='r', linestyle='--')
+    axs[1].set_ylabel('Position (m)')
+    axs[1].set_xlabel('Time (s)')
+    axs[1].axhline(y=0, color='r', linestyle='--')
+    axs[2].set_ylabel('Angle (rad)')
+    axs[2].set_xlabel('Time (s)')
+    axs[2].axhline(y=1, color='r', linestyle='--')
+    axs[2].invert_yaxis()
+
+    fig.suptitle('Inverted Pendulum Control', fontsize=20)
+    colors = cm.Blues(np.linspace(0.1, 1, 10))
+
+    for i, x0 in enumerate(range(1, 10)):
+        y0 = np.array([x0, 0, np.pi, 0])
+        y = odeint(dynamics_with_control, y0, t, args=(y_goal, m, M, L, g, delta, K))
+        u = compute_control_input(y, y_goal, K)
+        axs[0].plot(t, u, color=colors[i])
+        axs[1].plot(t, y[:, 0], color=colors[i])
+        axs[2].plot(t, degrees_to_radians(y[:, 2]), color=colors[i])
+
+    plt.show()
+\end{minted}
+
+\textcolor{teal}{
+\textbf{Explanation}: \\
+The simulation results show the system response to different initial cart positions \( x_0 \) ranging from 1 to 9. 
+The plots include the control input force, the cart position, and the pendulum angle over time. \\
+1. Control Input Force (Top Plot): \\
+    - The control input \( u \) is plotted for each initial position \( x_0 \) with a gradient color, where darker blue represents larger initial deviations. \\
+    - The initial control forces are larger for higher initial positions \( x_0 \) to quickly correct the system's state. \\
+    - Over time, the control force diminishes as the system stabilizes, indicating the effectiveness of the LQR controller in minimizing the control effort while bringing the system to the desired state. \\
+2. Cart Position (Middle Plot): \\
+    - The cart starts at different initial positions \( x_0 \) and moves towards the goal position (zero). \\
+    - The cart exhibits an oscillatory behavior initially, which gradually dampens as it reaches the goal state. This damping is due to the corrective forces applied by the controller. \\
+    - The convergence to the goal position is evident as all trajectories settle around zero, demonstrating the controller's ability to stabilize the cart's position. \\
+3. Pendulum Angle (Bottom Plot): \\
+    - The pendulum starts in the inverted position (\(\pi\) radians, equivalent to 1 in the plot) and is controlled to stabilize at the upright position (zero radians). \\
+    - The angle exhibits oscillations that are initially more pronounced for larger initial cart positions \( x_0 \). \\
+    - The pendulum angle trajectories converge to the upright position (1 in the plot, indicating zero radians), showing the controller's effectiveness in stabilizing the pendulum. \\
+The gradient color scheme highlights how the control effort and system response vary with different initial conditions. Larger initial deviations require stronger initial control forces, 
+but the system successfully stabilizes in all cases, demonstrating the robustness of the LQR controller.
+}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{./figs/Different_initial_positions.png}
+    \caption{Simulation results for the inverted pendulum system with LQR control for various initial positions.}
+\end{figure}
 
 
 
