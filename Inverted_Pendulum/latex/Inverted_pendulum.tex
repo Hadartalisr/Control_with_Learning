@@ -1,0 +1,185 @@
+\documentclass[a4 paper]{article}
+% Set target color model to RGB
+\usepackage[inner=2.0cm,outer=2.0cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{setspace}
+\usepackage[rgb]{xcolor}
+\usepackage{verbatim}
+\usepackage{subcaption}
+\usepackage{amsgen,amsmath,amstext,amsbsy,amsopn,tikz,amssymb}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true, urlcolor=blue,  linkcolor=blue, citecolor=blue]{hyperref}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage{rotating}
+%\usetikzlibrary{through,backgrounds}
+\hypersetup{%
+pdfauthor={Ashudeep Singh},%
+pdftitle={Homework},%
+pdfkeywords={Tikz,latex,bootstrap,uncertaintes},%
+pdfcreator={PDFLaTeX},%
+pdfproducer={PDFLaTeX},%
+}
+%\usetikzlibrary{shadows}
+% \usepackage[francais]{babel}
+\usepackage{booktabs}
+\input{macros.tex}
+
+
+\begin{document}
+\homework{Assignment 1 - LQR Control}{Due: 02/06/24}{Oron Sabag}{}{Hadar Tal}{}
+\textbf{Instructions}: 
+\begin{itemize}
+    \item The assignment is to be done individually.
+    \item Submit your assignment as a single PDF file.
+    \item This file contains extra materials for those who are interested in learning the tools used in the assignment's solution.
+    \item Read all the Questions carefully before you start working on the assignment.
+\end{itemize}
+
+
+\section{Continuous-time System}
+
+In the lecture, we focused on discrete linear systems. However, real-world systems often operate in continuous time, 
+making it essential to understand the transition to continuous-time systems and the associated control strategies.
+
+\subsection{Motivation for Continuous-time Systems}
+Continuous-time systems are ubiquitous in engineering and natural processes. Examples include electrical circuits, 
+mechanical systems, and biological systems. Unlike discrete systems, which are defined at specific time intervals, 
+continuous systems evolve over time according to differential equations. This continuous evolution provides a more 
+accurate representation of physical phenomena, allowing for precise modeling and control.
+
+\subsection{Equations of the Dynamics}
+The state-space representation of a continuous-time linear system is given by the following set of differential equations:
+
+\begin{equation}
+    \dot{x}(t) = A x(t) + B u(t),
+\end{equation}
+\begin{equation}
+    y(t) = C x(t) + D u(t),
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $x(t) \in \mathbb{R}^n$ is the state vector.
+    \item $u(t) \in \mathbb{R}^m$ is the control input.
+    \item $y(t) \in \mathbb{R}^p$ is the output vector.
+    \item $A \in \mathbb{R}^{n \times n}$ is the state matrix.
+    \item $B \in \mathbb{R}^{n \times m}$ is the input matrix.
+    \item $C \in \mathbb{R}^{p \times n}$ is the output matrix.
+    \item $D \in \mathbb{R}^{p \times m}$ is the feedthrough (or direct transmission) matrix.
+\end{itemize}
+
+\subsection{Linear Quadratic Regulator (LQR) Problem}
+The LQR problem for continuous-time systems involves finding a control law that minimizes a quadratic cost function. 
+The objective is to regulate the state of the system to the origin while minimizing the control effort. The cost function is defined as:
+
+\begin{equation}
+    J = \int_{0}^{\infty} \left( x(t)^T Q x(t) + u(t)^T R u(t) \right) dt
+\end{equation}
+where $Q \in \mathbb{R}^{n \times n}$ and $R \in \mathbb{R}^{m \times m}$ determine the relative importance of the state and 
+control effort in the cost function.
+
+
+\subsection{Comparison to Discrete-time LQR}
+In discrete-time systems, the state-space representation is defined by difference equations rather than differential equations. 
+The discrete-time LQR problem is similar to its continuous-time counterpart but with a cost function summed over discrete time steps. 
+The key equations are:
+
+\begin{equation}
+    x_{k+1} = A_d x_k + B_d u_k, \quad k = 0, 1, 2, \ldots
+\end{equation}
+\begin{equation}
+    J_N(u^N) = \sum_{k=0}^{N} \left( x_k^T Q x_k + u_k^T R u_k \right) + x_{N+1}^T Q_f x_{N+1}
+\end{equation}
+\begin{equation}
+    u_k = -K_d x_k,
+\end{equation}
+where $K_d$ is the optimal control gain matrix.
+
+
+\subsection{The Optimal Control}
+In the lecture, we discussed the determination of the control gain matrix \( K \) for discrete-time systems using an iterative approach. 
+This method involved solving a finite-horizon cost function through backward iteration, essentially using dynamic programming techniques. 
+However, for continuous-time systems, the process leverages the \textit{\textbf{Riccati equation}} for an infinite-horizon cost function, 
+providing a more direct and analytical solution (\ref{sec:riccati}).
+
+\section{Inverted Pendulum on a Cart}
+
+\subsection{Formulation of the Problem}
+
+\subsection{Systen Dynamics}
+
+
+\newpage
+\textbf{\huge{Extra material}}
+
+\section{Riccati Equation}\label{sec:riccati}
+
+
+\subsubsection{Lecture Approach}
+For discrete-time systems, the control gain matrix \( K \) is determined by solving the discrete-time Algebraic Riccati Equation (ARE). The process involves:
+
+1. Defining the cost function to minimize:
+   \[
+   J = \sum_{k=0}^{\infty} \left( x_k^T Q x_k + u_k^T R u_k \right),
+   \]
+   where \( Q \) and \( R \) are weight matrices that penalize the state and control input, respectively.
+
+2. Using backward iteration to solve the Riccati difference equation:
+   \[
+   P_k = Q + A^T P_{k+1} A - A^T P_{k+1} B (R + B^T P_{k+1} B)^{-1} B^T P_{k+1} A,
+   \]
+   where \( P_k \) is the cost-to-go matrix.
+
+3. Determining the optimal gain matrix \( K \) from:
+   \[
+   K = (R + B^T P B)^{-1} B^T P A,
+   \]
+   which minimizes the cost function and provides the optimal control law \( u_k = -K x_k \).
+
+\subsubsection{Continuous-time Riccati Equation}
+For continuous-time systems, the optimal control problem involves minimizing the infinite-horizon quadratic cost function:
+   \[
+   J = \int_{0}^{\infty} \left( x(t)^T Q x(t) + u(t)^T R u(t) \right) dt.
+   \]
+
+The solution involves solving the continuous-time Algebraic Riccati Equation (CARE):
+   \[
+   A^T P + P A - P B R^{-1} B^T P + Q = 0,
+   \]
+   where \( P \) is the solution matrix that captures the trade-offs between state regulation and control effort.
+
+The optimal control law is then given by:
+   \[
+   u(t) = -K x(t),
+   \]
+   with the gain matrix \( K \) calculated as:
+   \[
+   K = R^{-1} B^T P.
+   \]
+
+The Riccati equation provides a systematic way to find the optimal gain matrix \( K \) for continuous-time systems, ensuring stability and optimal performance. This method leverages the properties of the quadratic cost function and the state-space representation to derive an analytical solution, offering robustness and efficiency in control system design.
+
+\subsection{Comparison to Discrete-time LQR}
+In discrete-time systems, the state-space representation is defined by difference equations rather than differential equations. The discrete-time LQR problem is similar to its continuous-time counterpart but with a cost function summed over discrete time steps. The key equations are:
+
+\begin{equation}
+x_{k+1} = A_d x_k + B_d u_k,
+\end{equation}
+\begin{equation}
+J = \sum_{k=0}^{\infty} \left( x_k^T Q x_k + u_k^T R u_k \right),
+\end{equation}
+\begin{equation}
+u_k = -K_d x_k,
+\end{equation}
+
+where \( K_d \) is obtained from the discrete-time ARE. Despite the differences in their formulations, both continuous and discrete LQR controllers aim to balance state regulation and control effort, providing optimal feedback laws for system stabilization.
+
+By transitioning from discrete to continuous time, we gain a framework that better models real-world dynamics, enabling more precise and effective control strategies.
+
+
+
+\newpage
+\section{Euler-Lagrange Equations}
+
+
+
+\end{document} 
