@@ -468,13 +468,14 @@ Use the following simulation parameters:
 \newpage
 \textcolor{purple}{
 \subproblem{d} Simulate the inverted pendulum system with the LQR controller for various initial states 
-\(\mathbf{y_0} = [x_0, 0, \pi, 0]\), where \(x_0\) ranges from 1 to 9. Plot the control input, 
-cart position, and pendulum angle over time. Use a gradient color scheme to represent the initial position \(x_0\), 
-with larger \(x_0\) values represented by darker blue colors. Explain what happens to the control input and the system states over time.
+\(\mathbf{y_0} = [x_0, 0, \pi, 0]\), where \(x_0\) ranges from 0 to 10.5. Use a gradient color scheme to represent 
+the initial position \(x_0\), transitioning from blue to red as \(x_0\) increases. 
+Plot the control input, cart position, and pendulum angle over time. Explain what happens to the control input and the system states over time.
 Use the following simulation parameters:
 \begin{itemize}
     \item Simulation time: \( t_f = 15 \) s
     \item $dt$ : \( \frac{1}{30} \)
+    \item Number of initial positions: \( N = 50 \)
 \end{itemize}
 }
 
@@ -485,6 +486,12 @@ Use the following simulation parameters:
 }
 
 \begin{minted}[fontsize=\footnotesize]{python}
+    color1 = "blue"
+    color2 = "red"
+    N = 50
+    cmap = LinearSegmentedColormap.from_list("custom_cmap", [color1, color2], N=N)
+    colors = cmap(range(0, N+1))
+
     tf = 15
     dt = float(1 / 30)
     t = np.arange(0, tf, dt)
@@ -509,10 +516,9 @@ Use the following simulation parameters:
     axs[2].axhline(y=1, color='r', linestyle='--')
     axs[2].invert_yaxis()
 
-    fig.suptitle('Inverted Pendulum Control', fontsize=20)
-    colors = cm.Blues(np.linspace(0.1, 1, 10))
 
-    for i, x0 in enumerate(range(1, 10)):
+
+    for i, x0 in enumerate(np.linspace(0,10.5,N+1)):
         y0 = np.array([x0, 0, np.pi, 0])
         y = odeint(dynamics_with_control, y0, t, args=(y_goal, m, M, L, g, delta, K))
         u = compute_control_input(y, y_goal, K)
@@ -520,28 +526,11 @@ Use the following simulation parameters:
         axs[1].plot(t, y[:, 0], color=colors[i])
         axs[2].plot(t, degrees_to_radians(y[:, 2]), color=colors[i])
 
+
+    fig.suptitle('System Response to Different Initial Positions', fontsize=20)
     plt.show()
 \end{minted}
 
-\textcolor{teal}{
-\textbf{Explanation}: \\
-The simulation results show the system response to different initial cart positions \( x_0 \) ranging from 1 to 9. 
-The plots include the control input force, the cart position, and the pendulum angle over time. \\
-1. Control Input Force (Top Plot): \\
-    - The control input \( u \) is plotted for each initial position \( x_0 \) with a gradient color, where darker blue represents larger initial deviations. \\
-    - The initial control forces are larger for higher initial positions \( x_0 \) to quickly correct the system's state. \\
-    - Over time, the control force diminishes as the system stabilizes, indicating the effectiveness of the LQR controller in minimizing the control effort while bringing the system to the desired state. \\
-2. Cart Position (Middle Plot): \\
-    - The cart starts at different initial positions \( x_0 \) and moves towards the goal position (zero). \\
-    - The cart exhibits an oscillatory behavior initially, which gradually dampens as it reaches the goal state. This damping is due to the corrective forces applied by the controller. \\
-    - The convergence to the goal position is evident as all trajectories settle around zero, demonstrating the controller's ability to stabilize the cart's position. \\
-3. Pendulum Angle (Bottom Plot): \\
-    - The pendulum starts in the inverted position (\(\pi\) radians, equivalent to 1 in the plot) and is controlled to stabilize at the upright position (zero radians). \\
-    - The angle exhibits oscillations that are initially more pronounced for larger initial cart positions \( x_0 \). \\
-    - The pendulum angle trajectories converge to the upright position (1 in the plot, indicating zero radians), showing the controller's effectiveness in stabilizing the pendulum. \\
-The gradient color scheme highlights how the control effort and system response vary with different initial conditions. Larger initial deviations require stronger initial control forces, 
-but the system successfully stabilizes in all cases, demonstrating the robustness of the LQR controller.
-}
 
 \begin{figure}[H]
     \centering
@@ -550,15 +539,136 @@ but the system successfully stabilizes in all cases, demonstrating the robustnes
 \end{figure}
 
 
+\textcolor{purple}{
+\subproblem{e} Investigate the effect of varying the initial angle of the pendulum on the system's response. Simulate the inverted pendulum system for different
+ initial angles \(\theta_0\) ranging from \( \pi \) to \( 0.3 \pi \), while keeping the initial position and 
+ velocities constant (\(\mathbf{y_0} = [0, 0, \theta_0, 0]\)).
+  Use the LQR controller with \( Q = \text{diag}(1,1,1,1) \) and \( R = 1 \). Plot the control input, cart position, 
+  and pendulum angle over time. Use a gradient color scheme to represent different initial angles, 
+  transitioning from blue to red as the angle decreases. Explain how changing the initial angle affects the control input and the system states.
+Use the following simulation parameters:
+\begin{itemize}
+    \item Simulation time: \( t_f = 15 \) s
+    \item $dt$ : \( \frac{1}{30} \)
+    \item Number of initial angles: \( N = 50 \)
+\end{itemize}
+}
+
+\medbreak
+
+\textcolor{teal}{
+    Solution:
+}
+
+\begin{minted}[fontsize=\footnotesize]{python}
+    A = get_a_matrix(m, M, L, g, delta)
+    B = get_b_matrix(m, M, L, g, delta)
+    Q = np.diag([1,1,1,1])
+    R = np.array([[1]])
+    y_goal = np.array([0, 0, np.pi * 1, 0])
+
+    K, S, E = control.lqr(A, B, Q, R)
+
+    fig, axs = plt.subplots(3, 1, figsize=(15, 25))
+    axs[0].set_ylabel('Force (N)')
+    axs[0].set_xlabel('Time (s)')
+    axs[0].axhline(y=0, color='r', linestyle='--')
+    axs[1].set_ylabel('Position (m)')
+    axs[1].set_xlabel('Time (s)')
+    axs[1].axhline(y=0, color='r', linestyle='--')
+    axs[2].set_ylabel('Angle (rad)')
+    axs[2].set_xlabel('Time (s)')
+    axs[2].axhline(y=1, color='r', linestyle='--')
+    axs[2].invert_yaxis()
+
+
+    for i, radian in enumerate(np.linspace(0, 0.7, N+1)):
+        y0 = np.array([0, 0, (1 - radian) * np.pi, 0])
+        y = odeint(dynamics_with_control, y0, t, args=(y_goal, m, M, L, g, delta, K))
+        u = compute_control_input(y, y_goal, K)
+        axs[0].plot(t, u, color=colors[i])
+        axs[1].plot(t, y[:, 0], color=colors[i])
+        axs[2].plot(t, degrees_to_radians(y[:, 2]), color=colors[i])
+
+
+    fig.suptitle('System Response to Different Initial Angles', fontsize=20)
+    plt.show()
+\end{minted}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{./figs/Different_initial_angles.png}
+    \caption{Simulation results for the inverted pendulum system with LQR control for various initial angles.}
+\end{figure}
+
+
+\newpage
+\textcolor{purple}{
+\subproblem{f} Investigate the effect of varying the weighting matrix \( R \) in the LQR controller on the system's response. 
+Simulate the inverted pendulum system for different values of \( R \) ranging from 1 to 50, 
+while keeping the initial state \(\mathbf{y_0} = [10, 0, \pi, 0]\) and the state weighting matrix \( Q = \text{diag}(1,1,1,1) \) constant. 
+Plot the control input, cart position, and pendulum angle over time. Use a gradient color scheme to represent different values of \( R \), 
+transitioning from blue to red as \( R \) increases. Explain how changing \( R \) affects the control input and the system states.
+Use the following simulation parameters:
+\begin{itemize}
+    \item Simulation time: \( t_f = 15 \) s
+    \item $dt$ : \( \frac{1}{30} \)
+    \item Number of \( R \) values: \( N = 50 \)
+\end{itemize}
+}
+
+
+\medbreak
+
+\textcolor{teal}{
+    Solution:
+}
+
+\begin{minted}[fontsize=\footnotesize]{python}
+    A = get_a_matrix(m, M, L, g, delta)
+    B = get_b_matrix(m, M, L, g, delta)
+    Q = np.diag([1,1,1,1])
+    y_goal = np.array([0, 0, np.pi * 1, 0])
+    x0 = 10
+
+    fig, axs = plt.subplots(3, 1, figsize=(15, 25))
+    axs[0].set_ylabel('Force (N)')
+    axs[0].set_xlabel('Time (s)')
+    axs[0].axhline(y=0, color='r', linestyle='--')
+    axs[1].set_ylabel('Position (m)')
+    axs[1].set_xlabel('Time (s)')
+    axs[1].axhline(y=0, color='r', linestyle='--')
+    axs[2].set_ylabel('Angle (rad)')
+    axs[2].set_xlabel('Time (s)')
+    axs[2].axhline(y=1, color='r', linestyle='--')
+    axs[2].invert_yaxis()
+
+
+    for i, r in enumerate(np.linspace(1, 50, N+1)):
+        R = np.array([[r]])
+        K, S, E = control.lqr(A, B, Q, R)
+
+        y0 = np.array([x0, 0, np.pi, 0])
+        y = odeint(dynamics_with_control, y0, t, args=(y_goal, m, M, L, g, delta, K))
+        u = compute_control_input(y, y_goal, K)
+        axs[0].plot(t, u, color=colors[i])
+        axs[1].plot(t, y[:, 0], color=colors[i])
+        axs[2].plot(t, degrees_to_radians(y[:, 2]), color=colors[i])
+
+
+    fig.suptitle('System Response to Different Q values', fontsize=20)
+    plt.show()
+\end{minted}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{./figs/Different_R_values.png}
+    \caption{Simulation results for the inverted pendulum system with LQR control for different values of \( R \).}
+\end{figure}
 
     
 
 
-\bigbreak
-\bigbreak
-\bigbreak
-\bigbreak
-\bigbreak
 
 
 
@@ -701,65 +811,7 @@ with \( \frac{\partial f}{\partial x} \) replacing \( A \) and \( \frac{\partial
 This procedure is extremely general, and may be used to numerically obtain nonlinear optimal control trajectories.
 
 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-\newpage
-\section{Euler-Lagrange Equations}
 
-
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-\newpage
-\section{Euler-Lagrange Equations}
-
-
-
-
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-% * * * * * * * * * * * * * * * * * * * * * * * * 
-\newpage
 \begin{thebibliography}{9}
 
     \bibitem{brunton2019}
